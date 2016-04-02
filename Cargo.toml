@@ -4,7 +4,6 @@ version = "0.1.0"
 authors = ["Adam <sector-f on github>"]
 
 [dependencies]
-lazy_static = "*"
 xcb = "*"
 
 [[bin]]

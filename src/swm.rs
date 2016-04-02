@@ -20,17 +20,10 @@ const ENABLE_SLOPPY: bool = true;
 // Important stuff //
 /////////////////////
 
-#[macro_use]
-extern crate lazy_static;
-
 extern crate xcb;
 
 use std::process;
 use xcb::{base,xproto};
-
-lazy_static! {
-    static ref CONNECTION: base::Connection = get_connection();
-}
 
 const SUPER: xproto::ModMask = xproto::MOD_MASK_4;
 const ALT: xproto::ModMask = xproto::MOD_MASK_1;
@@ -48,5 +41,6 @@ fn get_connection() -> base::Connection {
 }
 
 fn main() {
+    let connection = get_connection();
     println!("Lorem ipsum dolor sit amet");
 }
