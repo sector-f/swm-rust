@@ -2,7 +2,7 @@
 // Configuration //
 ///////////////////
 
-// Valid choices are SUPER, ALT, CTRL, and SHIFT
+// Valid choices are SUPER, ALT, CTRL, and SHzIFT
 const MOD: xproto::ModMask = SUPER;
 
 // Borders
@@ -80,10 +80,13 @@ fn main() {
         //         XCB_EVENT_MASK_BUTTON_RELEASE, XCB_GRAB_MODE_ASYNC,
         //         XCB_GRAB_MODE_ASYNC, scr->root, XCB_NONE, 1, MOD);
 
-        // xcb_grab_button(conn, 0, scr->root, XCB_EVENT_MASK_BUTTON_PRESS |
-        //         XCB_EVENT_MASK_BUTTON_RELEASE, XCB_GRAB_MODE_ASYNC,
-        //         XCB_GRAB_MODE_ASYNC, scr->root, XCB_NONE, 3, MOD);
+        xcb::grab_button(&connection, false, focuswin, (xcb::EVENT_MASK_BUTTON_PRESS + xcb::EVENT_MASK_BUTTON_RELEASE) as u16, xcb::GRAB_MODE_ASYNC as u8, xcb::GRAB_MODE_ASYNC as u8, focuswin, xcb::NONE, 1, MOD as u16);
+        xcb::grab_button(&connection, false, focuswin, (xcb::EVENT_MASK_BUTTON_PRESS + xcb::EVENT_MASK_BUTTON_RELEASE) as u16, xcb::GRAB_MODE_ASYNC as u8, xcb::GRAB_MODE_ASYNC as u8, focuswin, xcb::NONE, 3, MOD as u16);
     }
+
+    xcb::change_window_attributes_checked(&connection, screen.root(), &[(xcb::CW_EVENT_MASK, xcb::EVENT_MASK_SUBSTRUCTURE_NOTIFY)]);
+
+    connection.flush();
 
     loop {
         events_loop();
