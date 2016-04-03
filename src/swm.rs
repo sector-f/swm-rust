@@ -25,13 +25,13 @@ extern crate xcb;
 use std::process;
 use xcb::{base,xproto};
 
-const SUPER: xproto::ModMask = xproto::MOD_MASK_4;
-const ALT: xproto::ModMask = xproto::MOD_MASK_1;
-const CTRL: xproto::ModMask = xproto::MOD_MASK_CONTROL;
-const SHIFT: xproto::ModMask = xproto::MOD_MASK_SHIFT;
+const SUPER: xcb::ModMask = xcb::MOD_MASK_4;
+const ALT: xcb::ModMask = xcb::MOD_MASK_1;
+const CTRL: xcb::ModMask = xcb::MOD_MASK_CONTROL;
+const SHIFT: xcb::ModMask = xcb::MOD_MASK_SHIFT;
 
-fn get_connection() -> base::Connection {
-    match base::Connection::connect(None) {
+fn get_connection() -> xcb::Connection {
+    match xcb::Connection::connect(None) {
         Ok((conn, _)) => conn,
         Err(_) => {
             println!("Unable to connect to the X server");
@@ -40,7 +40,7 @@ fn get_connection() -> base::Connection {
     }
 }
 
-fn get_screen<'a>(setup: &'a xproto::Setup<'a>) -> xproto::Screen<'a> {
+fn get_screen<'a>(setup: &'a xcb::Setup<'a>) -> xcb::Screen<'a> {
     match setup.roots().next() {
         Some(scr) => scr,
         None => {
@@ -54,7 +54,7 @@ fn get_screen<'a>(setup: &'a xproto::Setup<'a>) -> xproto::Screen<'a> {
 // Main //
 //////////
 
-fn deploy<'a>(setup: &'a &xproto::Setup<'a>) -> xproto::Screen<'a> {
+fn deploy<'a>(setup: &'a &xcb::Setup<'a>) -> xcb::Screen<'a> {
     let screen = get_screen(&setup);
     screen
 }
@@ -63,7 +63,7 @@ fn deploy<'a>(setup: &'a &xproto::Setup<'a>) -> xproto::Screen<'a> {
 fn focus() {
 }
 
-fn subscribe(win: xproto::Window) {
+fn subscribe(win: xcb::Window) {
 }
 
 fn events_loop() {
