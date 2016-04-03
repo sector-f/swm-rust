@@ -59,8 +59,22 @@ fn get_screen<'a>(setup: &'a xcb::Setup<'a>) -> xcb::Screen<'a> {
 // Main //
 //////////
 
-// focus(xcb_window_t win, int mode)
-fn focus(win: xcb::Window, mode: Mode) {
+fn focus(connection: &xcb::Connection, win: xcb::Window, mut focuswin: xcb::Window, mode: Mode) -> xcb::Window {
+    let border = if let Mode::Inactive = mode {
+        UNFOCUSCOL
+    } else {
+        FOCUSCOL
+    };
+    xcb::change_window_attributes(connection, win, &[(xcb::CW_BORDER_PIXEL, border)]);
+
+    if let Mode::Active = mode {
+        xcb::set_input_focus(connection, xcb::INPUT_FOCUS_POINTER_ROOT as u8, win, xcb::CURRENT_TIME);
+        if win != focuswin {
+            focuswin = win
+        }
+    }
+
+    focuswin
 }
 
 fn subscribe(connection: &xcb::Connection, win: xcb::Window) {
@@ -79,10 +93,6 @@ fn main() {
     let focuswin = screen.root();
 
     if ENABLE_MOUSE {
-        // xcb_grab_button(conn, 0, scr->root, XCB_EVENT_MASK_BUTTON_PRESS |
-        //         XCB_EVENT_MASK_BUTTON_RELEASE, XCB_GRAB_MODE_ASYNC,
-        //         XCB_GRAB_MODE_ASYNC, scr->root, XCB_NONE, 1, MOD);
-
         xcb::grab_button(&connection, false, focuswin, (xcb::EVENT_MASK_BUTTON_PRESS + xcb::EVENT_MASK_BUTTON_RELEASE) as u16, xcb::GRAB_MODE_ASYNC as u8, xcb::GRAB_MODE_ASYNC as u8, focuswin, xcb::NONE, 1, MOD as u16);
         xcb::grab_button(&connection, false, focuswin, (xcb::EVENT_MASK_BUTTON_PRESS + xcb::EVENT_MASK_BUTTON_RELEASE) as u16, xcb::GRAB_MODE_ASYNC as u8, xcb::GRAB_MODE_ASYNC as u8, focuswin, xcb::NONE, 3, MOD as u16);
     }
