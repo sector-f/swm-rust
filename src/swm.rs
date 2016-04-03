@@ -30,6 +30,11 @@ const ALT: xcb::ModMask = xcb::MOD_MASK_1;
 const CTRL: xcb::ModMask = xcb::MOD_MASK_CONTROL;
 const SHIFT: xcb::ModMask = xcb::MOD_MASK_SHIFT;
 
+enum Mode {
+    Inactive,
+    Active,
+}
+
 fn get_connection() -> xcb::Connection {
     match xcb::Connection::connect(None) {
         Ok((conn, _)) => conn,
@@ -54,13 +59,8 @@ fn get_screen<'a>(setup: &'a xcb::Setup<'a>) -> xcb::Screen<'a> {
 // Main //
 //////////
 
-fn deploy<'a>(setup: &'a &xcb::Setup<'a>) -> xcb::Screen<'a> {
-    let screen = get_screen(&setup);
-    screen
-}
-
 // focus(xcb_window_t win, int mode)
-fn focus() {
+fn focus(win: xcb::Window, mode: Mode) {
 }
 
 fn subscribe(win: xcb::Window) {
@@ -72,7 +72,18 @@ fn events_loop() {
 fn main() {
     let connection = get_connection();
     let setup = connection.get_setup();
+    let screen = get_screen(&setup);
+    let focuswin = screen.root();
 
+    if ENABLE_MOUSE {
+        // xcb_grab_button(conn, 0, scr->root, XCB_EVENT_MASK_BUTTON_PRESS |
+        //         XCB_EVENT_MASK_BUTTON_RELEASE, XCB_GRAB_MODE_ASYNC,
+        //         XCB_GRAB_MODE_ASYNC, scr->root, XCB_NONE, 1, MOD);
+
+        // xcb_grab_button(conn, 0, scr->root, XCB_EVENT_MASK_BUTTON_PRESS |
+        //         XCB_EVENT_MASK_BUTTON_RELEASE, XCB_GRAB_MODE_ASYNC,
+        //         XCB_GRAB_MODE_ASYNC, scr->root, XCB_NONE, 3, MOD);
+    }
 
     loop {
         events_loop();
