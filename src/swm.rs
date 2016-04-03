@@ -6,7 +6,7 @@
 const MOD: xproto::ModMask = SUPER;
 
 // Borders
-const BORDERWIDTH: u8 = 4;
+const BORDERWIDTH: u32 = 4;
 const FOCUSCOL: u32 = 0x18191A;
 const UNFOCUSCOL: u32 = 0x111213;
 
@@ -63,7 +63,10 @@ fn get_screen<'a>(setup: &'a xcb::Setup<'a>) -> xcb::Screen<'a> {
 fn focus(win: xcb::Window, mode: Mode) {
 }
 
-fn subscribe(win: xcb::Window) {
+fn subscribe(connection: &xcb::Connection, win: xcb::Window) {
+    xcb::change_window_attributes(connection, win, &[(xcb::CW_EVENT_MASK, xcb::EVENT_MASK_ENTER_WINDOW), (xcb::CW_EVENT_MASK, xcb::EVENT_MASK_SUBSTRUCTURE_NOTIFY)]);
+
+    xcb::configure_window(connection, win, &[(xcb::CONFIG_WINDOW_BORDER_WIDTH as u16, BORDERWIDTH)]);
 }
 
 fn events_loop() {
