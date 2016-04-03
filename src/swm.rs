@@ -40,15 +40,21 @@ fn get_connection() -> base::Connection {
     }
 }
 
-fn get_screen<'a>(setup: &'a xproto::Setup) -> xproto::Screen<'a> {
-    setup.roots().next().expect("Lost connection to X server")
+fn get_screen<'a>(setup: &'a xproto::Setup<'a>) -> xproto::Screen<'a> {
+    match setup.roots().next() {
+        Some(scr) => scr,
+        None => {
+            println!("Lost connection to X server");
+            process::exit(1);
+        },
+    }
 }
 
 //////////
 // Main //
 //////////
 
-fn deploy(setup: &xproto::Setup) -> xproto::Screen {
+fn deploy<'a>(setup: &'a &xproto::Setup<'a>) -> xproto::Screen<'a> {
     let screen = get_screen(&setup);
     screen
 }
