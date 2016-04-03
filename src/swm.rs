@@ -83,7 +83,56 @@ fn subscribe(connection: &xcb::Connection, win: xcb::Window) {
     xcb::configure_window(connection, win, &[(xcb::CONFIG_WINDOW_BORDER_WIDTH as u16, BORDERWIDTH)]);
 }
 
-fn events_loop() {
+fn events_loop(connection: &xcb::Connection, mut focuswin: xcb::Window) {
+    let mut event: xcb::GenericEvent;
+
+    loop {
+        println!("Waiting for event");
+        event = match connection.wait_for_event() {
+            Some(ev) => ev,
+            None => {
+                println!("XCB connection broken");
+                process::exit(1);
+            },
+        };
+        println!("Event received: {}", event.response_type());
+
+        match event.response_type() {
+            xcb::CREATE_NOTIFY => {
+                println!("A window was created");
+            },
+            xcb::DESTROY_NOTIFY => {
+                println!("A window was destroyed");
+            },
+            xcb::ENTER_NOTIFY => {
+                if ENABLE_MOUSE {
+                    println!("Mouse has entered a window");
+                }
+            },
+            xcb::MAP_NOTIFY => {
+            },
+            xcb::BUTTON_PRESS => {
+                if ENABLE_MOUSE {
+                    println!("Mouse button pressed");
+                }
+            },
+            xcb::MOTION_NOTIFY => {
+                if ENABLE_SLOPPY {
+                }
+            },
+            xcb::BUTTON_RELEASE => {
+                if ENABLE_MOUSE {
+                    println!("Mouse button released");
+                }
+            },
+            xcb::CONFIGURE_NOTIFY => {
+            },
+            _ => {
+            },
+        }
+
+        connection.flush();
+    }
 }
 
 fn main() {
@@ -102,7 +151,7 @@ fn main() {
     connection.flush();
 
     loop {
-        events_loop();
+        events_loop(&connection, focuswin);
     }
 
     process::exit(1);
