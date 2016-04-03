@@ -16,9 +16,9 @@ const ENABLE_MOUSE: bool = true;
 // Sloppy focus?
 const ENABLE_SLOPPY: bool = true;
 
-/////////////////////
-// Important stuff //
-/////////////////////
+////////////////////
+// Initialization //
+////////////////////
 
 extern crate xcb;
 
@@ -40,7 +40,37 @@ fn get_connection() -> base::Connection {
     }
 }
 
+fn get_screen<'a>(setup: &'a xproto::Setup) -> xproto::Screen<'a> {
+    setup.roots().next().expect("Lost connection to X server")
+}
+
+//////////
+// Main //
+//////////
+
+fn deploy(setup: &xproto::Setup) -> xproto::Screen {
+    let screen = get_screen(&setup);
+    screen
+}
+
+// focus(xcb_window_t win, int mode)
+fn focus() {
+}
+
+fn subscribe(win: xproto::Window) {
+}
+
+fn events_loop() {
+}
+
 fn main() {
     let connection = get_connection();
-    println!("Lorem ipsum dolor sit amet");
+    let setup = connection.get_setup();
+
+
+    loop {
+        events_loop();
+    }
+
+    process::exit(1);
 }
