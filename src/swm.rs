@@ -100,6 +100,11 @@ fn events_loop(connection: &xcb::Connection, mut focuswin: xcb::Window) {
         match event.response_type() {
             xcb::CREATE_NOTIFY => {
                 println!("A window was created");
+                let event: &xcb::CreateNotifyEvent = xcb::cast_event(&event);
+                if ! event.override_redirect() {
+                    subscribe(&connection, event.window());
+                    focuswin = focus(&connection, event.window(), focuswin, Mode::Active);
+                }
             },
             xcb::DESTROY_NOTIFY => {
                 println!("A window was destroyed");
