@@ -114,6 +114,11 @@ fn events_loop(connection: &xcb::Connection, mut focuswin: xcb::Window) {
                 }
             },
             xcb::MAP_NOTIFY => {
+                let event: &xcb::MapNotifyEvent = xcb::cast_event(&event);
+                if ! event.override_redirect() {
+                    xcb::map_window(connection, event.window());
+                    focuswin = focus(&connection, event.window(), focuswin, Mode::Active);
+                }
             },
             xcb::BUTTON_PRESS => {
                 if ENABLE_MOUSE {
