@@ -106,6 +106,8 @@ fn events_loop(connection: &xcb::Connection, mut focuswin: xcb::Window) {
                 }
             },
             xcb::DESTROY_NOTIFY => {
+                let event: &xcb::DestroyNotifyEvent = xcb::cast_event(&event);
+                xcb::kill_client(connection, event.window());
             },
             xcb::ENTER_NOTIFY => {
                 if ENABLE_SLOPPY {
