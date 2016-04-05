@@ -7,7 +7,8 @@ const MOD: xproto::ModMask = SUPER;
 
 // Borders
 const BORDERWIDTH: u32 = 4;
-const FOCUSCOL: u32 = 0x18191A;
+// const FOCUSCOL: u32 = 0x18191A;
+const FOCUSCOL: u32 = 0xFF0000;
 const UNFOCUSCOL: u32 = 0x111213;
 
 // Resize and move by mouse?
@@ -70,7 +71,8 @@ fn focus(connection: &xcb::Connection, win: xcb::Window, mut focuswin: xcb::Wind
     if let Mode::Active = mode {
         xcb::set_input_focus(connection, xcb::INPUT_FOCUS_POINTER_ROOT as u8, win, xcb::CURRENT_TIME);
         if win != focuswin {
-            focuswin = win
+            focus(connection, win, focuswin, Mode::Inactive);
+            focuswin = win;
         }
     }
 
@@ -87,7 +89,6 @@ fn events_loop(connection: &xcb::Connection, mut focuswin: xcb::Window) {
     let mut event: xcb::GenericEvent;
 
     loop {
-        println!("Waiting for event");
         event = match connection.wait_for_event() {
             Some(ev) => ev,
             None => {
@@ -95,11 +96,9 @@ fn events_loop(connection: &xcb::Connection, mut focuswin: xcb::Window) {
                 process::exit(1);
             },
         };
-        println!("Event received: {}", event.response_type());
 
         match event.response_type() {
             xcb::CREATE_NOTIFY => {
-                println!("A window was created");
                 let event: &xcb::CreateNotifyEvent = xcb::cast_event(&event);
                 if ! event.override_redirect() {
                     subscribe(&connection, event.window());
@@ -107,30 +106,34 @@ fn events_loop(connection: &xcb::Connection, mut focuswin: xcb::Window) {
                 }
             },
             xcb::DESTROY_NOTIFY => {
-                println!("A window was destroyed");
             },
             xcb::ENTER_NOTIFY => {
-                if ENABLE_MOUSE {
-                    println!("Mouse has entered a window");
+                if ENABLE_SLOPPY {
+                    let event: &xcb::EnterNotifyEvent = xcb::cast_event(&event);
+                    focuswin = focus(&connection, event.event(), focuswin, Mode::Active);
                 }
             },
             xcb::MAP_NOTIFY => {
             },
             xcb::BUTTON_PRESS => {
                 if ENABLE_MOUSE {
-                    println!("Mouse button pressed");
                 }
             },
             xcb::MOTION_NOTIFY => {
-                if ENABLE_SLOPPY {
+                if ENABLE_MOUSE {
                 }
             },
             xcb::BUTTON_RELEASE => {
                 if ENABLE_MOUSE {
-                    println!("Mouse button released");
                 }
             },
             xcb::CONFIGURE_NOTIFY => {
+                println!("Configuration event received");
+                let event: &xcb::ConfigureNotifyEvent = xcb::cast_event(&event);
+                if event.window() != focuswin {
+                    focuswin = focus(&connection, event.window(), focuswin, Mode::Inactive);
+                }
+                    focuswin = focus(&connection, event.window(), focuswin, Mode::Active);
             },
             _ => {
             },
