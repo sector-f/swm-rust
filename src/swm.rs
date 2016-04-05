@@ -71,7 +71,7 @@ fn focus(connection: &xcb::Connection, win: xcb::Window, mut focuswin: xcb::Wind
     if let Mode::Active = mode {
         xcb::set_input_focus(connection, xcb::INPUT_FOCUS_POINTER_ROOT as u8, win, xcb::CURRENT_TIME);
         if win != focuswin {
-            focus(connection, win, focuswin, Mode::Inactive);
+            focus(connection, focuswin, focuswin, Mode::Inactive);
             focuswin = win;
         }
     }
@@ -128,7 +128,6 @@ fn events_loop(connection: &xcb::Connection, mut focuswin: xcb::Window) {
                 }
             },
             xcb::CONFIGURE_NOTIFY => {
-                println!("Configuration event received");
                 let event: &xcb::ConfigureNotifyEvent = xcb::cast_event(&event);
                 if event.window() != focuswin {
                     focuswin = focus(&connection, event.window(), focuswin, Mode::Inactive);
