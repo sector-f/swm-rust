@@ -85,8 +85,10 @@ fn subscribe(connection: &xcb::Connection, win: xcb::Window) {
     xcb::configure_window(connection, win, &[(xcb::CONFIG_WINDOW_BORDER_WIDTH as u16, BORDERWIDTH)]);
 }
 
-fn events_loop(connection: &xcb::Connection, mut focuswin: xcb::Window) {
+fn events_loop(connection: &xcb::Connection, screen: &xcb::Screen, mut focuswin: xcb::Window) {
     let mut event: xcb::GenericEvent;
+    let mut win: xcb::Window = 0;
+    let mut values: [u32; 3] = [0; 3];
 
     loop {
         event = match connection.wait_for_event() {
@@ -124,14 +126,79 @@ fn events_loop(connection: &xcb::Connection, mut focuswin: xcb::Window) {
             },
             xcb::BUTTON_PRESS => {
                 if ENABLE_MOUSE {
+                    let event: &xcb::ButtonPressEvent = xcb::cast_event(&event);
+                    win = event.child();
+
+                    if win == 0 || win == screen.root() {
+                        connection.flush();
+                        return;
+                    }
+
+                    values[0] = xcb::STACK_MODE_ABOVE;
+
+                    xcb::configure_window(connection, win, &[(xcb::CONFIG_WINDOW_STACK_MODE as u16, values[0])]);
+
+                    let geom = xcb::get_geometry(connection, win).get_reply().expect("An error with the X server occurred");
+
+                    if event.detail() == 1 {
+                        values[2] = 1;
+                        xcb::warp_pointer(connection, xcb::NONE, win, 0, 0, 0, 0, (geom.width() / 2) as i16, (geom.height() / 2) as i16);
+                    } else {
+                        values[2] = 3;
+                        xcb::warp_pointer(connection, xcb::NONE, win, 0, 0, 0, 0, geom.width() as i16, geom.height() as i16);
+                    }
+                    xcb::grab_pointer(connection, false, screen.root(), (xcb::EVENT_MASK_BUTTON_RELEASE | xcb::EVENT_MASK_BUTTON_MOTION | xcb::EVENT_MASK_POINTER_MOTION_HINT) as u16, xcb::GRAB_MODE_ASYNC as u8, xcb::GRAB_MODE_ASYNC as u8, screen.root(), xcb::NONE, xcb::CURRENT_TIME);
+                    connection.flush();
                 }
             },
             xcb::MOTION_NOTIFY => {
                 if ENABLE_MOUSE {
+                    let pointer = xcb::query_pointer(connection, win).get_reply().expect("An error with the X server occurred");
+
+                    if values[2] == 1 {
+                        let geom = match xcb::get_geometry(connection, win).get_reply() {
+                            Ok(g) => g,
+                            Err(_) => return,
+                        };
+
+                        values[0] =
+                            if (pointer.root_x() as u32 + geom.width() as u32 / 2) > screen.width_in_pixels() as u32 - (BORDERWIDTH * 2) {
+                                (screen.width_in_pixels() as u32 - geom.width() as u32 - (BORDERWIDTH * 2)) as u32
+                            } else {
+                                (pointer.root_x() as u32 - geom.width() as u32 / 2) as u32
+                            };
+                        values[1] =
+                            if (pointer.root_y() as u32 + geom.height() as u32 / 2) > screen.height_in_pixels() as u32 - (BORDERWIDTH * 2) {
+                                (screen.height_in_pixels() as u32 - geom.height() as u32 - (BORDERWIDTH * 2)) as u32
+                            } else {
+                                (pointer.root_y() as u32 - geom.height() as u32 / 2) as u32
+                            };
+
+                        if pointer.root_x() as u32 > geom.width() as u32 / 2 {
+                            values[0] = 0;
+                        }
+                        if pointer.root_y() as u32 > geom.height() as u32 / 2 {
+                            values[1] = 0;
+                        }
+
+                        xcb::configure_window(connection, win, &[(xcb::CONFIG_WINDOW_X as u16, values[0]), (xcb::CONFIG_WINDOW_Y as u16, values[1])]);
+                        connection.flush();
+                    } else if values[2] == 3 {
+                        let geom = match xcb::get_geometry(connection, win).get_reply() {
+                            Ok(g) => g,
+                            Err(_) => return,
+                        };
+
+                        values[0] = pointer.root_x() as u32 - geom.x() as u32;
+                        values[1] = pointer.root_y() as u32 - geom.y() as u32;
+                        xcb::configure_window(connection, win, &[(xcb::CONFIG_WINDOW_WIDTH as u16, values[0]), (xcb::CONFIG_WINDOW_HEIGHT as u16, values[1])]);
+                    }
                 }
             },
             xcb::BUTTON_RELEASE => {
                 if ENABLE_MOUSE {
+                    focuswin = focus(connection, win, focuswin, Mode::Active);
+                    xcb::ungrab_pointer(connection, xcb::CURRENT_TIME);
                 }
             },
             xcb::CONFIGURE_NOTIFY => {
@@ -156,8 +223,8 @@ fn main() {
     let focuswin = screen.root();
 
     if ENABLE_MOUSE {
-        xcb::grab_button(&connection, false, focuswin, (xcb::EVENT_MASK_BUTTON_PRESS + xcb::EVENT_MASK_BUTTON_RELEASE) as u16, xcb::GRAB_MODE_ASYNC as u8, xcb::GRAB_MODE_ASYNC as u8, focuswin, xcb::NONE, 1, MOD as u16);
-        xcb::grab_button(&connection, false, focuswin, (xcb::EVENT_MASK_BUTTON_PRESS + xcb::EVENT_MASK_BUTTON_RELEASE) as u16, xcb::GRAB_MODE_ASYNC as u8, xcb::GRAB_MODE_ASYNC as u8, focuswin, xcb::NONE, 3, MOD as u16);
+        xcb::grab_button(&connection, false, focuswin, (xcb::EVENT_MASK_BUTTON_PRESS | xcb::EVENT_MASK_BUTTON_RELEASE) as u16, xcb::GRAB_MODE_ASYNC as u8, xcb::GRAB_MODE_ASYNC as u8, focuswin, xcb::NONE, 1, MOD as u16);
+        xcb::grab_button(&connection, false, focuswin, (xcb::EVENT_MASK_BUTTON_PRESS | xcb::EVENT_MASK_BUTTON_RELEASE) as u16, xcb::GRAB_MODE_ASYNC as u8, xcb::GRAB_MODE_ASYNC as u8, focuswin, xcb::NONE, 3, MOD as u16);
     }
 
     xcb::change_window_attributes_checked(&connection, screen.root(), &[(xcb::CW_EVENT_MASK, xcb::EVENT_MASK_SUBSTRUCTURE_NOTIFY)]);
@@ -165,7 +232,7 @@ fn main() {
     connection.flush();
 
     loop {
-        events_loop(&connection, focuswin);
+        events_loop(&connection, &screen, focuswin);
     }
 
     process::exit(1);
